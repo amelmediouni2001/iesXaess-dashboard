@@ -1,60 +1,51 @@
 'use client'
 
-import { ThermalSystem } from '@/data/cubesatData'
+import { memo, useMemo } from 'react'
+import type { TelemetryDisplayProps, ThermalSystem } from '@/types'
+import {
+  getTempColor,
+  getTempStatus,
+  formatNumber,
+  textColorToBg,
+} from '@/lib/utils'
+import { DISPLAY_CONFIG } from '@/lib/constants'
 
-interface ThermalSystemDisplayProps {
-  data: ThermalSystem
-}
+export const ThermalSystemDisplay = memo<TelemetryDisplayProps<ThermalSystem>>(
+  ({ data }) => {
 
-export function ThermalSystemDisplay({ data }: ThermalSystemDisplayProps) {
-  const getTempColor = (temp: number, system: 'cpu' | 'battery' | 'internal') => {
-    const thresholds = {
-      cpu: { warning: 50, critical: 60 },
-      battery: { warning: 23, critical: 28 },
-      internal: { warning: 25, critical: 30 }
-    }
+    const cpuColor = useMemo(() => getTempColor(data.cpuTemp, 'cpu'), [data.cpuTemp])
+    const batteryColor = useMemo(() => getTempColor(data.batteryTemp, 'battery'), [data.batteryTemp])
+    const internalColor = useMemo(() => getTempColor(data.internalTemp, 'internal'), [data.internalTemp])
+    const avgTemp = useMemo(
+      () => (data.cpuTemp + data.batteryTemp + data.internalTemp) / 3,
+      [data.cpuTemp, data.batteryTemp, data.internalTemp]
+    )
 
-    const threshold = thresholds[system]
-    if (temp > threshold.critical) return 'text-red-400'
-    if (temp > threshold.warning) return 'text-yellow-400'
-    return 'text-green-400'
-  }
-
-  const getTempStatus = (temp: number, system: 'cpu' | 'battery' | 'internal') => {
-    const thresholds = {
-      cpu: { warning: 50, critical: 60 },
-      battery: { warning: 23, critical: 28 },
-      internal: { warning: 25, critical: 30 }
-    }
-
-    const threshold = thresholds[system]
-    if (temp > threshold.critical) return 'CRITICAL'
-    if (temp > threshold.warning) return 'WARNING'
-    return 'NOMINAL'
-  }
-
-  return (
-    <div className="glass-panel p-6">
-      <h3 className="text-lg font-semibold mb-4 text-white">Thermal System</h3>
+    return (
+    <div className="glass-panel p-6 floating" style={{ animationDelay: '2s' }}>
+      <h3 className="text-lg font-semibold mb-4 text-white flex items-center">
+        <span className="mr-2">🌡️</span>
+        Thermal System
+      </h3>
       
       <div className="space-y-4">
         {/* CPU Temperature */}
         <div className="flex items-center justify-between">
           <div className="flex flex-col">
             <span className="text-sm text-gray-300">CPU Temperature</span>
-            <span className={`text-xs ${getTempColor(data.cpuTemp, 'cpu')}`}>
+            <span className={`text-xs ${cpuColor}`}>
               {getTempStatus(data.cpuTemp, 'cpu')}
             </span>
           </div>
-          <span className={`font-mono text-lg ${getTempColor(data.cpuTemp, 'cpu')}`}>
-            {data.cpuTemp.toFixed(1)}°C
+          <span className={`font-mono text-lg ${cpuColor}`}>
+            {formatNumber(data.cpuTemp, DISPLAY_CONFIG.temperatureDecimalPlaces)}°C
           </span>
         </div>
 
         {/* Temperature Bar for CPU */}
         <div className="w-full bg-gray-700 rounded-full h-2">
           <div 
-            className={`h-2 rounded-full transition-all duration-500 ${getTempColor(data.cpuTemp, 'cpu').replace('text-', 'bg-')}`}
+            className={`h-2 rounded-full transition-all duration-500 ${textColorToBg(cpuColor)}`}
             style={{ width: `${Math.min(100, (data.cpuTemp / 70) * 100)}%` }}
           />
         </div>
@@ -63,19 +54,19 @@ export function ThermalSystemDisplay({ data }: ThermalSystemDisplayProps) {
         <div className="flex items-center justify-between">
           <div className="flex flex-col">
             <span className="text-sm text-gray-300">Battery Temperature</span>
-            <span className={`text-xs ${getTempColor(data.batteryTemp, 'battery')}`}>
+            <span className={`text-xs ${batteryColor}`}>
               {getTempStatus(data.batteryTemp, 'battery')}
             </span>
           </div>
-          <span className={`font-mono text-lg ${getTempColor(data.batteryTemp, 'battery')}`}>
-            {data.batteryTemp.toFixed(1)}°C
+          <span className={`font-mono text-lg ${batteryColor}`}>
+            {formatNumber(data.batteryTemp, DISPLAY_CONFIG.temperatureDecimalPlaces)}°C
           </span>
         </div>
 
         {/* Temperature Bar for Battery */}
         <div className="w-full bg-gray-700 rounded-full h-2">
           <div 
-            className={`h-2 rounded-full transition-all duration-500 ${getTempColor(data.batteryTemp, 'battery').replace('text-', 'bg-')}`}
+            className={`h-2 rounded-full transition-all duration-500 ${textColorToBg(batteryColor)}`}
             style={{ width: `${Math.min(100, (data.batteryTemp / 35) * 100)}%` }}
           />
         </div>
@@ -84,19 +75,19 @@ export function ThermalSystemDisplay({ data }: ThermalSystemDisplayProps) {
         <div className="flex items-center justify-between">
           <div className="flex flex-col">
             <span className="text-sm text-gray-300">Internal Temperature</span>
-            <span className={`text-xs ${getTempColor(data.internalTemp, 'internal')}`}>
+            <span className={`text-xs ${internalColor}`}>
               {getTempStatus(data.internalTemp, 'internal')}
             </span>
           </div>
-          <span className={`font-mono text-lg ${getTempColor(data.internalTemp, 'internal')}`}>
-            {data.internalTemp.toFixed(1)}°C
+          <span className={`font-mono text-lg ${internalColor}`}>
+            {formatNumber(data.internalTemp, DISPLAY_CONFIG.temperatureDecimalPlaces)}°C
           </span>
         </div>
 
         {/* Temperature Bar for Internal */}
         <div className="w-full bg-gray-700 rounded-full h-2">
           <div 
-            className={`h-2 rounded-full transition-all duration-500 ${getTempColor(data.internalTemp, 'internal').replace('text-', 'bg-')}`}
+            className={`h-2 rounded-full transition-all duration-500 ${textColorToBg(internalColor)}`}
             style={{ width: `${Math.min(100, (data.internalTemp / 35) * 100)}%` }}
           />
         </div>
@@ -106,11 +97,13 @@ export function ThermalSystemDisplay({ data }: ThermalSystemDisplayProps) {
           <div className="flex items-center justify-between">
             <span className="text-sm text-gray-300">Average Temp</span>
             <span className="font-mono text-lg text-blue-400">
-              {((data.cpuTemp + data.batteryTemp + data.internalTemp) / 3).toFixed(1)}°C
+              {formatNumber(avgTemp, DISPLAY_CONFIG.temperatureDecimalPlaces)}°C
             </span>
           </div>
         </div>
       </div>
     </div>
   )
-}
+})
+
+ThermalSystemDisplay.displayName = 'ThermalSystemDisplay'

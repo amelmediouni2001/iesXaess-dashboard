@@ -1,18 +1,25 @@
 'use client'
 
-interface Activity {
-  id: string
-  source: string
-  destination: string
-  date: string
-  status: 'on-air' | 'taking-off' | 'cancelled' | 'arrived'
-}
+import { memo } from 'react'
+import type { ActivitiesTableProps, Activity } from '@/types'
+import { ACTIVITY_STATUS_COLORS } from '@/lib/constants'
 
-interface ActivitiesTableProps {
-  activities: Activity[]
-}
+const ActivityRow = memo<{ activity: Activity }>(({ activity }) => (
+  <tr className="border-b border-white/5">
+    <td className="py-3 text-sm">{activity.id}</td>
+    <td className="py-3 text-sm">{activity.destination}</td>
+    <td className="py-3 text-sm">{activity.date}</td>
+    <td className="py-3 text-sm">
+      <span className={`status-badge ${ACTIVITY_STATUS_COLORS[activity.status]}`}>
+        {activity.status}
+      </span>
+    </td>
+  </tr>
+))
 
-export function ActivitiesTable({ activities }: ActivitiesTableProps) {
+ActivityRow.displayName = 'ActivityRow'
+
+export const ActivitiesTable = memo<ActivitiesTableProps>(({ activities }) => {
   return (
     <div className="glass-panel p-4">
       <div className="mb-4 flex items-center justify-between">
@@ -35,28 +42,13 @@ export function ActivitiesTable({ activities }: ActivitiesTableProps) {
           </thead>
           <tbody>
             {activities.map((activity) => (
-              <tr key={activity.id} className="border-b border-white/5">
-                <td className="py-3 text-sm">{activity.id}</td>
-                <td className="py-3 text-sm">{activity.destination}</td>
-                <td className="py-3 text-sm">{activity.date}</td>
-                <td className="py-3 text-sm">
-                  <span
-                    className={`status-badge ${
-                      activity.status === 'on-air'
-                        ? 'status-badge-success'
-                        : activity.status === 'cancelled'
-                        ? 'status-badge-danger'
-                        : 'status-badge-warning'
-                    }`}
-                  >
-                    {activity.status}
-                  </span>
-                </td>
-              </tr>
+              <ActivityRow key={activity.id} activity={activity} />
             ))}
           </tbody>
         </table>
       </div>
     </div>
   )
-}
+})
+
+ActivitiesTable.displayName = 'ActivitiesTable'

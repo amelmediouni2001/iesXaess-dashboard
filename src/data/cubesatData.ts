@@ -1,82 +1,34 @@
 // CubeSat Telemetry Data Generator
 // Simulates realistic telemetry data for dashboard display
 
-export interface PowerSystem {
-  batteryLevel: number; // 0-100%
-  solarPanelOutput: number; // Watts
-  powerConsumption: number; // Watts
-  chargingStatus: "charging" | "discharging" | "idle";
-}
+import type { CubeSatTelemetry, Anomaly, SeverityLevel } from '@/types'
+import { randomBetween, randomChoice, clamp } from '@/lib/utils'
+import {
+  TELEMETRY_RANGES,
+  PROBABILITIES,
+  DISPLAY_CONFIG,
+} from '@/lib/constants'
 
-export interface ThermalSystem {
-  cpuTemp: number; // °C
-  batteryTemp: number; // °C
-  internalTemp: number; // °C
-}
-
-export interface CommunicationSystem {
-  signalStrength: number; // dBm
-  uplinkStatus: "connected" | "lost";
-  downlinkStatus: "connected" | "lost";
-  lastContact: Date;
-}
-
-export interface Anomaly {
-  time: Date;
-  system: string;
-  severity: "low" | "medium" | "high" | "critical";
-  actionTaken: string;
-}
-
-export interface AIRepairModule {
-  anomaliesDetected: Anomaly[];
-  aiStatus: "monitoring" | "repairing" | "idle";
-  confidenceScore: number; // 0-1
-}
-
-export interface MissionSummary {
-  missionTime: number; // hours since launch
-  totalAnomalies: number;
-  repairedAnomalies: number;
-}
-
-export interface CubeSatTelemetry {
-  powerSystem: PowerSystem;
-  thermalSystem: ThermalSystem;
-  communicationSystem: CommunicationSystem;
-  aiRepairModule: AIRepairModule;
-  missionSummary: MissionSummary;
-  lastUpdated: Date;
-}
-
-// Utility functions for realistic random data
-const randomBetween = (min: number, max: number): number => 
-  Math.random() * (max - min) + min;
-
-const randomChoice = <T>(array: T[]): T => 
-  array[Math.floor(Math.random() * array.length)];
+// System and action constants for anomaly generation
+const ANOMALY_SYSTEMS = ['Power', 'Thermal', 'Communication', 'Navigation', 'AI Core'] as const
+const SEVERITIES: SeverityLevel[] = ['low', 'medium', 'high', 'critical']
+const REPAIR_ACTIONS = [
+  'Auto-corrected voltage fluctuation',
+  'Rerouted power distribution',
+  'Thermal regulation activated',
+  'Signal boost applied',
+  'System restart initiated',
+  'Backup systems engaged',
+  'Self-diagnostic completed',
+] as const
 
 // Generate realistic anomaly data
-const generateRandomAnomaly = (): Anomaly => {
-  const systems = ["Power", "Thermal", "Communication", "Navigation", "AI Core"];
-  const severities: Anomaly['severity'][] = ["low", "medium", "high", "critical"];
-  const actions = [
-    "Auto-corrected voltage fluctuation",
-    "Rerouted power distribution",
-    "Thermal regulation activated",
-    "Signal boost applied",
-    "System restart initiated",
-    "Backup systems engaged",
-    "Self-diagnostic completed"
-  ];
-
-  return {
-    time: new Date(Date.now() - Math.random() * 86400000), // Last 24 hours
-    system: randomChoice(systems),
-    severity: randomChoice(severities),
-    actionTaken: randomChoice(actions)
-  };
-};
+const generateRandomAnomaly = (): Anomaly => ({
+  time: new Date(Date.now() - Math.random() * 86400000), // Last 24 hours
+  system: randomChoice([...ANOMALY_SYSTEMS]),
+  severity: randomChoice(SEVERITIES),
+  actionTaken: randomChoice([...REPAIR_ACTIONS]),
+})
 
 // Initial telemetry data
 let currentTelemetry: CubeSatTelemetry = {
@@ -113,19 +65,36 @@ let currentTelemetry: CubeSatTelemetry = {
 // Generate updated telemetry data with realistic variations
 export const generateTelemetry = (): CubeSatTelemetry => {
   // Power system variations
-  const batteryDelta = randomBetween(-2, 3);
-  const solarVariation = randomBetween(0.8, 1.2);
-  
-  currentTelemetry.powerSystem.batteryLevel = Math.max(0, Math.min(100, 
-    currentTelemetry.powerSystem.batteryLevel + batteryDelta));
-  
+  const batteryDelta = randomBetween(
+    TELEMETRY_RANGES.battery.delta.min,
+    TELEMETRY_RANGES.battery.delta.max
+  )
+  const solarVariation = randomBetween(
+    TELEMETRY_RANGES.solar.variation.min,
+    TELEMETRY_RANGES.solar.variation.max
+  )
+
+  currentTelemetry.powerSystem.batteryLevel = clamp(
+    currentTelemetry.powerSystem.batteryLevel + batteryDelta,
+    TELEMETRY_RANGES.battery.min,
+    TELEMETRY_RANGES.battery.max
+  )
+
   // Solar output varies with orbital position (day/night cycle simulation)
-  const orbitalPhase = (Date.now() / 1000) % 5400; // 90-minute orbit simulation
-  const solarMultiplier = Math.max(0, Math.sin(orbitalPhase / 5400 * 2 * Math.PI));
-  currentTelemetry.powerSystem.solarPanelOutput = 
-    randomBetween(10, 15) * solarMultiplier * solarVariation;
-  
-  currentTelemetry.powerSystem.powerConsumption = randomBetween(6, 12);
+  const orbitalPhase = (Date.now() / 1000) % TELEMETRY_RANGES.orbitalCycle
+  const solarMultiplier = Math.max(
+    0,
+    Math.sin((orbitalPhase / TELEMETRY_RANGES.orbitalCycle) * 2 * Math.PI)
+  )
+  currentTelemetry.powerSystem.solarPanelOutput =
+    randomBetween(TELEMETRY_RANGES.solar.min, TELEMETRY_RANGES.solar.max) *
+    solarMultiplier *
+    solarVariation
+
+  currentTelemetry.powerSystem.powerConsumption = randomBetween(
+    TELEMETRY_RANGES.power.min,
+    TELEMETRY_RANGES.power.max
+  )
   
   // Determine charging status based on power balance
   const powerBalance = currentTelemetry.powerSystem.solarPanelOutput - 

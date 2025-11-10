@@ -1,14 +1,9 @@
 'use client'
 
-import { Card } from '@tremor/react'
+import { memo } from 'react'
+import type { SatisfactionRateProps } from '@/types'
 
-interface SatisfactionRateProps {
-  rate: number
-  title: string
-  subtitle: string
-}
-
-export function SatisfactionRate({ rate, title, subtitle }: SatisfactionRateProps) {
+export const SatisfactionRate = memo<SatisfactionRateProps>(({ rate, title, subtitle }) => {
   return (
     <div className="glass-panel p-4">
       <div className="space-y-2">
@@ -26,4 +21,6 @@ export function SatisfactionRate({ rate, title, subtitle }: SatisfactionRateProp
       </div>
     </div>
   )
-}
+})
+
+SatisfactionRate.displayName = 'SatisfactionRate'

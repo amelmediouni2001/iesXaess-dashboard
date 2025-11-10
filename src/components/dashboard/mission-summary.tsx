@@ -1,51 +1,44 @@
 'use client'
 
-import { MissionSummary } from '@/data/cubesatData'
+import { memo, useMemo } from 'react'
+import type { TelemetryDisplayProps, MissionSummary } from '@/types'
+import {
+  formatMissionTime,
+  calculateRepairRate,
+  getRepairRateColor,
+  textColorToBg,
+} from '@/lib/utils'
 
-interface MissionSummaryDisplayProps {
-  data: MissionSummary
-}
+export const MissionSummaryDisplay = memo<TelemetryDisplayProps<MissionSummary>>(
+  ({ data }) => {
+    const repairRate = useMemo(
+      () => calculateRepairRate(data.repairedAnomalies, data.totalAnomalies),
+      [data.repairedAnomalies, data.totalAnomalies]
+    )
+    const repairRateColor = useMemo(
+      () => getRepairRateColor(repairRate),
+      [repairRate]
+    )
+    const missionTimeFormatted = useMemo(
+      () => formatMissionTime(data.missionTime),
+      [data.missionTime]
+    )
 
-export function MissionSummaryDisplay({ data }: MissionSummaryDisplayProps) {
-  const formatMissionTime = (hours: number) => {
-    const days = Math.floor(hours / 24)
-    const remainingHours = Math.floor(hours % 24)
-    const minutes = Math.floor((hours % 1) * 60)
-    
-    if (days > 0) {
-      return `${days}d ${remainingHours}h ${minutes}m`
-    } else if (remainingHours > 0) {
-      return `${remainingHours}h ${minutes}m`
-    } else {
-      return `${minutes}m`
-    }
-  }
-
-  const getRepairRate = () => {
-    if (data.totalAnomalies === 0) return 100
-    return (data.repairedAnomalies / data.totalAnomalies) * 100
-  }
-
-  const getRepairRateColor = (rate: number) => {
-    if (rate > 90) return 'text-green-400'
-    if (rate > 75) return 'text-yellow-400'
-    return 'text-red-400'
-  }
-
-  const repairRate = getRepairRate()
-
-  return (
-    <div className="glass-panel p-6">
-      <h3 className="text-lg font-semibold mb-4 text-white">Mission Summary</h3>
-      
-      <div className="space-y-4">
-        {/* Mission Time */}
-        <div className="text-center">
-          <div className="text-3xl font-mono text-blue-400 mb-1">
-            {formatMissionTime(data.missionTime)}
+    return (
+      <div className="glass-panel p-6 floating" style={{ animationDelay: '3s' }}>
+        <h3 className="text-lg font-semibold mb-4 text-white flex items-center">
+          <span className="mr-2">🚀</span>
+          Mission Summary
+        </h3>
+        
+        <div className="space-y-4">
+          {/* Mission Time */}
+          <div className="text-center">
+            <div className="text-3xl font-mono text-blue-400 mb-1">
+              {missionTimeFormatted}
+            </div>
+            <div className="text-sm text-gray-400">Mission Duration</div>
           </div>
-          <div className="text-sm text-gray-400">Mission Duration</div>
-        </div>
 
         {/* Mission Stats Grid */}
         <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-600">
@@ -68,9 +61,9 @@ export function MissionSummaryDisplay({ data }: MissionSummaryDisplayProps) {
 
         {/* Repair Success Rate */}
         <div className="pt-4 border-t border-gray-600">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between">
             <span className="text-sm text-gray-300">Repair Success Rate</span>
-            <span className={`font-mono text-lg ${getRepairRateColor(repairRate)}`}>
+            <span className={`font-mono text-lg ${repairRateColor}`}>
               {repairRate.toFixed(1)}%
             </span>
           </div>
@@ -78,7 +71,7 @@ export function MissionSummaryDisplay({ data }: MissionSummaryDisplayProps) {
           {/* Progress Bar */}
           <div className="w-full bg-gray-700 rounded-full h-3">
             <div 
-              className={`h-3 rounded-full transition-all duration-500 ${getRepairRateColor(repairRate).replace('text-', 'bg-')}`}
+              className={`h-3 rounded-full transition-all duration-500 ${textColorToBg(repairRateColor)}`}
               style={{ width: `${repairRate}%` }}
             />
           </div>
@@ -127,4 +120,6 @@ export function MissionSummaryDisplay({ data }: MissionSummaryDisplayProps) {
       </div>
     </div>
   )
-}
+})
+
+MissionSummaryDisplay.displayName = 'MissionSummaryDisplay'

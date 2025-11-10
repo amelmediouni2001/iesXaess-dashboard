@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useMemo } from 'react'
 import { WorldMap } from '@/components/dashboard/world-map'
 import { SatisfactionRate } from '@/components/dashboard/satisfaction-rate'
 import { ActivitiesTable } from '@/components/dashboard/activities-table'
@@ -9,71 +9,91 @@ import { ThermalSystemDisplay } from '@/components/dashboard/thermal-system'
 import { CommunicationSystemDisplay } from '@/components/dashboard/communication-system'
 import { AIRepairModuleDisplay } from '@/components/dashboard/ai-repair-module'
 import { MissionSummaryDisplay } from '@/components/dashboard/mission-summary'
-import { getCubeSatTelemetry, generateTelemetry, startTelemetryUpdates, stopTelemetryUpdates, CubeSatTelemetry } from '@/data/cubesatData'
+import { AnimatedSpaceBackground } from '@/components/ui/animated-space-background'
+import { useTelemetry, useTemperatures } from '@/hooks'
+import { calculateRepairRate } from '@/lib/utils'
+import type { Activity } from '@/types'
 
-const mockActivities = [
+const MOCK_ACTIVITIES: Activity[] = [
   {
     id: 'AB 707',
     source: 'JP',
     destination: 'IN',
     date: 'May 6, 2025',
-    status: 'on-air' as const,
+    status: 'on-air',
   },
   {
     id: 'JK 127',
     source: 'US',
     destination: 'BN',
     date: 'May 6, 2025',
-    status: 'taking-off' as const,
+    status: 'taking-off',
   },
   {
     id: 'NA 235',
     source: 'EU',
     destination: 'US',
     date: 'May 6, 2025',
-    status: 'cancelled' as const,
+    status: 'cancelled',
   },
-]
+] as const
 
 export default function DashboardPage() {
-  const [temperatures, setTemperatures] = useState<number[]>([24, 24, 24, 24]);
-  const [telemetryData, setTelemetryData] = useState<CubeSatTelemetry>(getCubeSatTelemetry());
+  const { telemetryData, isLive } = useTelemetry()
+  const temperatures = useTemperatures()
 
-  useEffect(() => {
-    // Generate random temperatures only on the client side
-    setTemperatures([15, 16, 17, 18].map(() => 24 + Math.round(Math.random() * 5)));
-    
-    // Start real-time telemetry updates
-    const updateInterval = startTelemetryUpdates((newData) => {
-      setTelemetryData(newData);
-    });
-
-    return () => {
-      stopTelemetryUpdates();
-    };
-  }, []);
+  // Memoize derived values
+  const repairSuccessRate = useMemo(
+    () =>
+      calculateRepairRate(
+        telemetryData.missionSummary.repairedAnomalies,
+        telemetryData.missionSummary.totalAnomalies
+      ),
+    [telemetryData.missionSummary.repairedAnomalies, telemetryData.missionSummary.totalAnomalies]
+  )
   return (
-    <div className="min-h-screen bg-background p-8">
-      <div className="mx-auto max-w-7xl space-y-8">
+    <div className="min-h-screen relative p-8">
+      <AnimatedSpaceBackground />
+      <div className="relative z-10 mx-auto max-w-7xl space-y-8">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Worldwide Perspective</h1>
-          <button className="rounded-full bg-primary px-4 py-2 text-sm font-medium text-white">
-            Track Live
-          </button>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center space-x-4">
+            <div className="w-8 h-8 bg-linear-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center">
+              <span className="text-white font-bold text-sm">🛰️</span>
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-white space-glow">CubeSat Mission Control</h1>
+              <p className="text-blue-300 text-sm">Real-time satellite monitoring & telemetry</p>
+            </div>
+          </div>
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              <span className="text-green-400 text-sm font-medium">LIVE</span>
+            </div>
+            <button className="glass-panel px-6 py-2 text-sm font-medium text-white hover:bg-white/10 transition-all duration-300 pulse-glow">
+              🚀 Track Live
+            </button>
+          </div>
+        </div>
+
+        {/* Centered World Map */}
+        <div className="flex justify-center mb-8">
+          <div className="glass-panel p-6 w-fit">
+            <div className="text-center mb-4">
+              <h2 className="text-xl font-semibold text-white">CubeSat Global Tracking</h2>
+              <p className="text-sm text-gray-400">Real-time orbital position</p>
+            </div>
+            <WorldMap />
+          </div>
         </div>
 
         {/* Main Grid */}
         <div className="grid gap-6 lg:grid-cols-12">
-          {/* Left Column - Main Visualization */}
+          {/* Left Column - Telemetry Systems */}
           <div className="lg:col-span-8 space-y-6">
-            {/* World Map */}
-            <div className="glass-panel p-6">
-              <WorldMap />
-            </div>
-
             {/* Activities Table */}
-            <ActivitiesTable activities={mockActivities} />
+            <ActivitiesTable activities={MOCK_ACTIVITIES} />
             
             {/* Telemetry Systems Row */}
             <div className="grid gap-6 md:grid-cols-2">
@@ -105,7 +125,7 @@ export default function DashboardPage() {
                 subtitle="System health"
               />
               <SatisfactionRate
-                rate={Math.round((telemetryData.missionSummary.repairedAnomalies / Math.max(telemetryData.missionSummary.totalAnomalies, 1)) * 100)}
+                rate={Math.round(repairSuccessRate)}
                 title="Repair Success"
                 subtitle="Auto-fixes"
               />
@@ -140,8 +160,12 @@ export default function DashboardPage() {
                 </span>
               </div>
               <div className="flex items-center space-x-2 mt-2">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                <span className="text-xs text-gray-400">Live telemetry active</span>
+                <div
+                  className={`w-2 h-2 rounded-full ${isLive ? 'bg-green-400 animate-pulse' : 'bg-gray-400'}`}
+                />
+                <span className="text-xs text-gray-400">
+                  {isLive ? 'Live telemetry active' : 'Telemetry paused'}
+                </span>
               </div>
             </div>
           </div>
