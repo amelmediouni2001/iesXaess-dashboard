@@ -1,6 +1,6 @@
 'use client'
 
-import { memo, useMemo } from 'react'
+import { memo, useMemo, useState, useEffect } from 'react'
 import type { TelemetryDisplayProps, AIRepairModule, Anomaly } from '@/types'
 import {
   getAIStatusColor,
@@ -12,6 +12,8 @@ import {
 
 export const AIRepairModuleDisplay = memo<TelemetryDisplayProps<AIRepairModule>>(
   ({ data }) => {
+    const [mounted, setMounted] = useState(false)
+
     const statusColor = useMemo(
       () => getAIStatusColor(data.aiStatus),
       [data.aiStatus]
@@ -20,6 +22,11 @@ export const AIRepairModuleDisplay = memo<TelemetryDisplayProps<AIRepairModule>>
       () => getConfidenceColor(data.confidenceScore),
       [data.confidenceScore]
     )
+
+    // Fix hydration issue by only rendering anomalies on client
+    useEffect(() => {
+      setMounted(true)
+    }, [])
 
     return (
     <div className="glass-panel p-6 floating" style={{ animationDelay: '1s' }}>
@@ -66,25 +73,29 @@ export const AIRepairModuleDisplay = memo<TelemetryDisplayProps<AIRepairModule>>
           </div>
           
           <div className="space-y-2 max-h-40 overflow-y-auto">
-            {data.anomaliesDetected.slice(0, 5).map((anomaly: Anomaly, index: number) => (
-              <div key={index} className="bg-gray-800/50 rounded-lg p-3 text-xs">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-white font-medium">{anomaly.system}</span>
-                  <div className="flex items-center space-x-2">
-                    <span className={`px-2 py-1 rounded text-xs ${getSeverityColor(anomaly.severity)}`}>
-                      {anomaly.severity.toUpperCase()}
-                    </span>
-                    <span className="text-gray-400">{formatTimeAgo(anomaly.time)}</span>
-                  </div>
-                </div>
-                <p className="text-gray-300 text-xs">{anomaly.actionTaken}</p>
+            {!mounted ? (
+              <div className="text-center text-gray-400 py-4">
+                Loading anomalies...
               </div>
-            ))}
-            
-            {data.anomaliesDetected.length === 0 && (
+            ) : data.anomaliesDetected.length === 0 ? (
               <div className="text-center text-gray-400 py-4">
                 No recent anomalies detected
               </div>
+            ) : (
+              data.anomaliesDetected.slice(0, 5).map((anomaly: Anomaly, index: number) => (
+                <div key={index} className="bg-gray-800/50 rounded-lg p-3 text-xs">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-white font-medium">{anomaly.system}</span>
+                    <div className="flex items-center space-x-2">
+                      <span className={`px-2 py-1 rounded text-xs ${getSeverityColor(anomaly.severity)}`}>
+                        {anomaly.severity.toUpperCase()}
+                      </span>
+                      <span className="text-gray-400">{formatTimeAgo(anomaly.time)}</span>
+                    </div>
+                  </div>
+                  <p className="text-gray-300 text-xs">{anomaly.actionTaken}</p>
+                </div>
+              ))
             )}
           </div>
         </div>

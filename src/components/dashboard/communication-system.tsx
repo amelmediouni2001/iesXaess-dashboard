@@ -1,6 +1,6 @@
 'use client'
 
-import { memo, useMemo } from 'react'
+import { memo, useMemo, useState, useEffect } from 'react'
 import type { TelemetryDisplayProps, CommunicationSystem } from '@/types'
 import {
   getSignalColor,
@@ -13,6 +13,8 @@ import {
 
 export const CommunicationSystemDisplay = memo<TelemetryDisplayProps<CommunicationSystem>>(
   ({ data }) => {
+    const [lastContactText, setLastContactText] = useState<string>('')
+
     const signalColor = useMemo(
       () => getSignalColor(data.signalStrength),
       [data.signalStrength]
@@ -40,6 +42,11 @@ export const CommunicationSystemDisplay = memo<TelemetryDisplayProps<Communicati
           : 'text-yellow-400',
       [data.uplinkStatus, data.downlinkStatus]
     )
+
+    // Fix hydration issue by calculating time on client side only
+    useEffect(() => {
+      setLastContactText(formatTimeSince(data.lastContact))
+    }, [data.lastContact])
 
     return (
     <div className="glass-panel p-6 floating" style={{ animationDelay: '4s' }}>
@@ -100,7 +107,7 @@ export const CommunicationSystemDisplay = memo<TelemetryDisplayProps<Communicati
         <div className="flex items-center justify-between">
           <span className="text-sm text-gray-300">Last Contact</span>
           <span className="font-mono text-sm text-blue-400">
-            {formatTimeSince(data.lastContact)}
+            {lastContactText || '...'} 
           </span>
         </div>
 
