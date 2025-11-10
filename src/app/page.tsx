@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { WorldMap } from '@/components/dashboard/world-map'
 import { SatisfactionRate } from '@/components/dashboard/satisfaction-rate'
 import { ActivitiesTable } from '@/components/dashboard/activities-table'
@@ -29,6 +30,12 @@ const mockActivities = [
 ]
 
 export default function DashboardPage() {
+  const [temperatures, setTemperatures] = useState<number[]>([24, 24, 24, 24]);
+
+  useEffect(() => {
+    // Generate random temperatures only on the client side
+    setTemperatures([15, 16, 17, 18].map(() => 24 + Math.round(Math.random() * 5)));
+  }, []);
   return (
     <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-7xl space-y-8">
@@ -78,7 +85,7 @@ export default function DashboardPage() {
             <div className="glass-panel p-6">
               <h2 className="mb-4 text-lg font-semibold">Weather Status</h2>
               <div className="grid grid-cols-2 gap-4">
-                {[15, 16, 17, 18].map((hour) => (
+                {[15, 16, 17, 18].map((hour, index) => (
                   <div
                     key={hour}
                     className="flex flex-col items-center space-y-2 rounded-lg bg-secondary/50 p-4"
@@ -87,7 +94,7 @@ export default function DashboardPage() {
                       {hour}:00
                     </span>
                     <span className="text-2xl font-semibold">
-                      {24 + Math.round(Math.random() * 5)}°C
+                      {temperatures[index]}°C
                     </span>
                   </div>
                 ))}

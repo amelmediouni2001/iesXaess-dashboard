@@ -37,12 +37,20 @@ const WorldMapInner = forwardRef<HTMLDivElement, WorldMapProps>(function WorldMa
     dashGap: 0.5
   }]
 
+  // CubeSat objects data
+  const cubeSatData = [{
+    lat: 20,
+    lng: 40,
+    altitude: 0.15,
+    color: '#888888'
+  }] as Array<{lat: number, lng: number, altitude: number, color: string}>
+
   return (
     <div
       ref={ref}
       className={`h-[500px] w-full flex items-center justify-center ${className}`}
     >
-      <div className="flex items-center justify-center h-[400px] w-[400px]">
+      <div className="flex items-center justify-center h-[400px] w-[400px] relative">
         <Globe
           ref={globeRef}
           globeImageUrl="//unpkg.com/three-globe/example/img/earth-night.jpg"
@@ -54,6 +62,34 @@ const WorldMapInner = forwardRef<HTMLDivElement, WorldMapProps>(function WorldMa
           arcDashAnimateTime={1500}
           atmosphereColor="#3a228a"
           atmosphereAltitude={0.25}
+          objectsData={cubeSatData}
+          objectLat={(d: any) => d.lat}
+          objectLng={(d: any) => d.lng}
+          objectAltitude={(d: any) => d.altitude}
+          objectThreeObject={() => {
+            // Create CubeSat geometry
+            const group = new (window as any).THREE.Group()
+            
+            // Main body
+            const bodyGeometry = new (window as any).THREE.BoxGeometry(0.02, 0.02, 0.02)
+            const bodyMaterial = new (window as any).THREE.MeshLambertMaterial({ color: 0x888888 })
+            const body = new (window as any).THREE.Mesh(bodyGeometry, bodyMaterial)
+            group.add(body)
+            
+            // Solar panels
+            const panelGeometry = new (window as any).THREE.BoxGeometry(0.04, 0.001, 0.01)
+            const panelMaterial = new (window as any).THREE.MeshLambertMaterial({ color: 0x2244ff })
+            
+            const leftPanel = new (window as any).THREE.Mesh(panelGeometry, panelMaterial)
+            leftPanel.position.x = -0.03
+            group.add(leftPanel)
+            
+            const rightPanel = new (window as any).THREE.Mesh(panelGeometry, panelMaterial)
+            rightPanel.position.x = 0.03
+            group.add(rightPanel)
+            
+            return group
+          }}
         />
       </div>
     </div>
